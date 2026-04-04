@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VoxGlobal Pro V3.2</title>
+    <style>
+        :root { --p: #2563EB; --bg: #F8FAFC; --txt: #1E293B; --danger: #EF4444; --gold: #D4AF37; }
+        * { box-sizing: border-box; font-family: sans-serif; border-radius: 12px; }
+        body { margin: 0; background: var(--bg); color: var(--txt); overflow-x: hidden; }
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E2E8F0; position: sticky; top: 0; z-index: 1000; }
+        .logo { font-weight: 900; color: var(--p); cursor: pointer; font-size: 1.1rem; user-select: none; -webkit-user-select: none; }
+        .menu-btn { background: none; border: none; font-size: 20px; cursor: pointer; }
+        .vista { display: none; padding: 15px; padding-bottom: 150px; }
+        .activa { display: block; }
+        
+        /* GRID HUB 2x2 */
+        #list-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .card { background: white; padding: 12px; border: 1px solid #E2E8F0; height: 180px; display: flex; flex-direction: column; cursor: pointer; overflow: hidden; position: relative; }
+        .card.selected { border: 3px solid var(--p); background: #EFF6FF; }
+        .card h3 { margin: 0; font-size: 14px; color: var(--p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card p { font-size: 11px; color: #64748B; margin: 5px 0; flex-grow: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; line-height: 1.3; }
+        .card-footer { font-size: 8px; color: #94A3B8; border-top: 1px solid #F1F5F9; padding-top: 5px; margin-top: 5px; }
+
+        /* EDITOR Y HERRAMIENTAS */
+        #editor-container { background: white; border: 1px solid #E2E8F0; min-height: 500px; padding: 15px; }
+        #e-title { font-size: 22px; font-weight: 800; color: var(--p); border-bottom: 1px solid #F1F5F9; margin-bottom: 10px; padding-bottom: 5px; outline: none; }
+        #e-body { font-size: 16px; line-height: 1.6; min-height: 400px; outline: none; }
+
+        .footer-tools { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; border-top: 2px solid var(--p); display: flex; flex-wrap: wrap; gap: 8px; z-index: 1100; transition: 0.3s; }
+        .tools-hidden { transform: translateY(85%); }
+        .btn { flex: 1; padding: 12px; border: none; font-weight: bold; font-size: 11px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .btn-p { background: var(--p); } .btn-s { background: #475569; } .btn-ok { background: #10B981; width: 100%; flex: none; }
+        .btn-eye { background: #CBD5E1; color: #1E293B; flex: 0 0 45px; }
+
+        .dropdown { display: none; position: absolute; top: 60px; background: white; border: 2px solid var(--p); width: 230px; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .dropdown button { width: 100%; padding: 12px; border: none; background: none; text-align: left; border-bottom: 1px solid #F1F5F9; cursor: pointer; }
+        
+        #del-bar { display: none; background: #1E293B; color: white; padding: 10px 15px; position: sticky; top: 58px; z-index: 900; justify-content: space-between; align-items: center; }
+        .fab { position: fixed; bottom: 120px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--p); color: white; border: none; font-size: 30px; z-index: 100; }
+        
+        @media print { header, .footer-tools, .fab, .menu-btn { display: none !important; } .vista { display: block !important; } }
+    </style>
+</head>
+<body onclick="closeMenus()">
+
+    <header>
+        <button class="menu-btn" onclick="toggleMenu(event, 'm-hamb')">☰</button>
+        <div class="logo" id="logo-vox">VOXGLOBAL PRO V3</div>
+        <button class="menu-btn" onclick="toggleMenu(event, 'm-dots')">⋮</button>
+    </header>
+
+    <div id="del-bar">
+        <span id="sel-count">0 seleccionados</span>
+        <div>
+            <button onclick="toggleModeDel()" style="background:none; border:1px solid white; color:white; padding:5px;">X</button>
+            <button onclick="confirmDel()" style="background:var(--danger); border:none; color:white; padding:5px 15px;">Borrar</button>
+        </div>
+    </div>
+
+    <div id="m-hamb" class="dropdown" style="left: 10px;">
+        <button onclick="irA('v-hub')">📂 Mis Guiones</button>
+        <button onclick="importarArchivo()">📄 Importar (.TXT / .DOC)</button>
+        <button onclick="importarMaletin()">🔄 Sincronizar Maletín</button>
+        <button onclick="descargarMaletin()">💼 Descargar Respaldo</button>
+        <button onclick="toggleModeDel()">📑 Selección Múltiple</button>
+    </div>
+
+    <div id="m-dots" class="dropdown" style="right: 10px;">
+        <button onclick="irA('v-premium')">⭐ Suscripción ($500/año)</button>
+        <button onclick="exportarPDF()">📕 Exportar PDF</button>
+        <button onclick="compartirApp()">📲 Compartir WhatsApp</button>
+        <button onclick="alert('Cargando Ads...')">📺 Ganar Puntos</button>
+    </div>
+
+    <div id="v-hub" class="vista activa">
+        <input type="text" id="q" oninput="renderHub()" placeholder="🔍 Buscar..." style="width:100%; padding:12px; margin-bottom:10px; border:1px solid #DDD;">
+        <div id="list-container"></div>
+        <button class="fab" onclick="newDoc()">+</button>
+    </div>
+
+    <div id="v-edit" class="vista">
+        <div style="margin-bottom:10px; display:flex; gap:10px;">
+            <button onclick="irA('v-hub')" style="background:#DDD; border:none; padding:10px;">⬅</button>
+            <select id="font-f" onchange="document.getElementById('editor-container').style.fontFamily=this.value" style="flex:1">
+                <option value="sans-serif">Sans</option>
+                <option value="serif">Serif</option>
+                <option value="monospace">Mono</option>
+            </select>
+        </div>
+        <div id="editor-container" onclick="showTools()">
+            <div id="e-title" contenteditable="true" placeholder="Título..."></div>
+            <div id="e-body" contenteditable="true" placeholder="Escribe aquí..."></div>
+        </div>
+        <div class="footer-tools" id="main-tools">
+            <button class="btn btn-eye" onclick="hideTools(event)">👁️</button>
+            <button class="btn btn-s" onclick="speakText()">🔊 OÍR</button>
+            <button class="btn btn-s" onclick="alert('🎤 Dictando...')">🎤 DICTAR</button>
+            <button class="btn btn-s" onclick="exportarPDF()">📕 PDF</button>
+            <button class="btn btn-ok" onclick="saveDoc()">💾 GUARDAR</button>
+        </div>
+    </div>
+
+    <div id="v-premium" class="vista">
+        <h2>VoxGlobal Premium</h2>
+        <div style="background:white; padding:20px; border:2px solid var(--gold);">
+            <p>💰 <b>Anualidad:</b> $500.00 MXN</p>
+            <button onclick="alert('Redirigiendo...')" class="btn-ok" style="padding:15px;">PAGAR AHORA</button>
+            <button onclick="irA('v-hub')" class="btn-s" style="width:100%; margin-top:10px;">Volver</button>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('vox_db') || '[]');
+        let modeDel = false; let selected = [];
+
+        // --- MODO DIOS MEJORADO (7 SEG TÁCTIL) ---
+        let godTimer;
+        const logo = document.getElementById('logo-vox');
+        function godAction() {
+            let p = prompt("PIN Maestro:");
+            if(p === (localStorage.getItem('v_pin') || '1010')) {
+                alert("Modo Dios: ON"); toggleModeDel();
+                let n = prompt("¿Nuevo PIN?"); if(n) localStorage.setItem('v_pin', n);
+            }
+        }
+        logo.addEventListener('touchstart', (e) => { e.preventDefault(); godTimer = setTimeout(godAction, 7000); }, {passive: false});
+        logo.addEventListener('mousedown', () => godTimer = setTimeout(godAction, 7000));
+        logo.addEventListener('touchend', () => clearTimeout(godTimer));
+        logo.addEventListener('mouseup', () => clearTimeout(godTimer));
+
+        // --- FUNCIONES HUB ---
+        function renderHub() {
+            const container = document.getElementById('list-container');
+            const query = document.getElementById('q').value.toLowerCase();
+            container.innerHTML = '';
+            db.sort((a,b) => b.uTime - a.uTime).filter(d => d.t.toLowerCase().includes(query) || d.cTxt.toLowerCase().includes(query)).forEach(doc => {
+                const card = document.createElement('div');
+                card.className = `card ${selected.includes(doc.id) ? 'selected' : ''}`;
+                card.onclick = () => modeDel ? toggleSelect(doc.id) : openDoc(doc.id);
+                card.innerHTML = `<h3>${doc.t || 'Sin Título'}</h3><p>${doc.cTxt || ''}</p><div class="card-footer">📅 ${doc.cDate}<br>✏️ ${doc.uDate}</div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function saveDoc() {
+            const id = document.getElementById('v-edit').dataset.id;
+            const t = document.getElementById('e-title').innerText;
+            const cTxt = document.getElementById('e-body').innerText;
+            const cHtml = document.getElementById('e-body').innerHTML;
+            const now = new Date();
+            const dStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+            if(id) { let d = db.find(x => x.id == id); d.t=t; d.cHtml=cHtml; d.cTxt=cTxt; d.uTime=now.getTime(); d.uDate=dStr; }
+            else { db.push({id:Date.now(), t, cHtml, cTxt, cDate:dStr, uTime:now.getTime(), uDate:dStr}); }
+            localStorage.setItem('vox_db', JSON.stringify(db)); irA('v-hub');
+        }
+
+        function openDoc(id) {
+            const d = db.find(x => x.id == id);
+            document.getElementById('e-title').innerText = d.t;
+            document.getElementById('e-body').innerHTML = d.cHtml;
+            document.getElementById('v-edit').dataset.id = id; irA('v-edit');
+        }
+
+        function newDoc() { document.getElementById('e-title').innerText=''; document.getElementById('e-body').innerHTML=''; delete document.getElementById('v-edit').dataset.id; irA('v-edit'); }
+
+        // --- HERRAMIENTAS OCULTABLES ---
+        function hideTools(e) { e.stopPropagation(); document.getElementById('main-tools').classList.add('tools-hidden'); }
+        function showTools() { document.getElementById('main-tools').classList.remove('tools-hidden'); }
+
+        // --- EXPORTAR Y COMPARTIR ---
+        function exportarPDF() { window.print(); }
+        async function compartirApp() {
+            const t = document.getElementById('e-title').innerText || "VoxGlobal";
+            const b = document.getElementById('e-body').innerText || "";
+            if(navigator.share) { await navigator.share({title: t, text: `*${t}*\n\n${b}`}); }
+            else { window.location.href = `mailto:?subject=${t}&body=${b}`; }
+        }
+
+        // --- MALETÍN Y ARCHIVOS ---
+        function descargarMaletin() {
+            const b=new Blob([localStorage.getItem('vox_db')],{type:'application/json'});
+            const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=`Vox_Backup.json`; a.click();
+        }
+        function importarMaletin() {
+            const i=document.createElement('input'); i.type='file'; i.accept='.json';
+            i.onchange = e => {
+                const f=e.target.files[0]; const r=new FileReader();
+                r.onload = ev => {
+                    const data=JSON.parse(ev.target.result);
+                    if(confirm("¿Fusionar datos?")) {
+                        const ids=db.map(x=>x.id); data.forEach(n=>{if(!ids.includes(n.id))db.push(n)});
+                        localStorage.setItem('vox_db',JSON.stringify(db)); renderHub();
+                    }
+                }; r.readAsText(f);
+            }; i.click();
+        }
+
+        // --- NAVEGACIÓN ---
+        function irA(v) { document.querySelectorAll('.vista').forEach(x=>x.classList.remove('activa')); document.getElementById(v).classList.add('activa'); if(v==='v-hub') renderHub(); }
+        function toggleMenu(e,id) { e.stopPropagation(); closeMenus(); document.getElementById(id).style.display='block'; }
+        function closeMenus() { document.querySelectorAll('.dropdown').forEach(d=>d.style.display='none'); }
+        function speakText() { const s = window.getSelection().toString() || document.getElementById('e-body').innerText; window.speechSynthesis.speak(new SpeechSynthesisUtterance(s)); }
+
+        window.onload = renderHub;
+    </script>
+</body>
+</html>
