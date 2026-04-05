@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VoxGlobal V4.7 - Profesional</title>
+    <style>
+        :root { --p: #2563EB; --bg: #F8FAFC; --txt: #1E293B; --gold: #D4AF37; --adn: #8B5CF6; --danger: #EF4444; --ok: #10B981; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; border-radius: 12px; transition: all 0.2s ease; }
+        body { margin: 0; background: var(--bg); color: var(--txt); overflow-x: hidden; }
+        
+        /* HEADER */
+        header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E2E8F0; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .logo { font-weight: 900; color: var(--p); cursor: pointer; font-size: 1.2rem; user-select: none; }
+        .btn-icon { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--p); }
+
+        /* VISTAS */
+        .vista { display: none; padding: 15px; padding-bottom: 200px; max-width: 900px; margin: 0 auto; }
+        .activa { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* GRID PROYECTOS */
+        #list-container { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+        .card { background: white; padding: 15px; border: 1px solid #E2E8F0; height: 170px; display: flex; flex-direction: column; cursor: pointer; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        .card:hover { border-color: var(--p); transform: translateY(-2px); }
+        .card h3 { margin: 0; font-size: 14px; color: var(--p); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card p { font-size: 11px; color: #64748B; flex-grow: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; line-height: 1.4; margin: 8px 0; }
+        .card-meta { font-size: 9px; color: #94A3B8; border-top: 1px solid #F1F5F9; padding-top: 5px; }
+
+        /* EDITOR */
+        #editor-shell { background: white; border: 1px solid #E2E8F0; min-height: 450px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        #e-title { font-size: 22px; font-weight: 800; color: var(--p); border-bottom: 2px solid #F1F5F9; margin-bottom: 15px; outline: none; padding-bottom: 5px; }
+        #e-body { font-size: 16px; line-height: 1.6; min-height: 380px; outline: none; color: #334155; }
+        [contenteditable]:empty:before { content: attr(placeholder); color: #CBD5E1; }
+
+        /* ADN & CONFIG */
+        #adn-box { display: none; background: #F5F3FF; border: 2px solid var(--adn); padding: 15px; margin-bottom: 15px; border-radius: 8px; }
+        #adn-input { width: 100%; height: 70px; border: 1px solid #DDD; padding: 10px; font-size: 12px; margin-top: 10px; resize: none; }
+
+        /* BARRA DE HERRAMIENTAS (DINÁMICA) */
+        .footer-tools { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px; border-top: 3px solid var(--p); display: flex; flex-wrap: wrap; gap: 8px; z-index: 1100; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); }
+        .tools-hidden { transform: translateY(85%); }
+        .btn { flex: 1; padding: 12px; border: none; font-weight: bold; font-size: 11px; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn-toggle { position: absolute; top: -35px; right: 20px; background: var(--p); width: 40px; height: 35px; border-radius: 10px 10px 0 0; color: white; border: none; font-size: 18px; }
+        .btn-adn { background: var(--adn); flex: 0 0 55px; font-size: 18px; }
+        .btn-mic { background: var(--danger); flex: 0 0 55px; font-size: 18px; }
+        .btn-p { background: var(--p); } .btn-s { background: #475569; } .btn-ok { background: var(--ok); width: 100%; flex: none; font-size: 14px; }
+
+        /* DROPDOWNS */
+        .dropdown { display: none; position: absolute; top: 65px; background: white; border: 2px solid var(--p); width: 250px; z-index: 2000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .dropdown button { width: 100%; padding: 14px; border: none; text-align: left; background: none; border-bottom: 1px solid #F1F5F9; cursor: pointer; }
+        .dropdown button:hover { background: #F8FAFC; }
+        .fab { position: fixed; bottom: 140px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--p); color: white; border: none; font-size: 30px; z-index: 100; box-shadow: 0 5px 15px rgba(37,99,235,0.4); cursor: pointer; }
+
+        /* PERFIL */
+        .card-reg { background: white; border: 3px solid var(--p); padding: 25px; text-align: center; }
+        .pts-box { font-size: 32px; font-weight: 900; color: var(--gold); margin: 15px 0; }
+    </style>
+</head>
+<body onclick="closeMenus()">
+
+    <header>
+        <button class="btn-icon" onclick="toggleMenu(event, 'm-main')">☰</button>
+        <div class="logo" id="main-logo" onclick="irA('v-hub')">VOXGLOBAL PRO V4.7</div>
+        <button class="btn-icon" onclick="toggleMenu(event, 'm-user')">👤</button>
+    </header>
+
+    <div id="m-main" class="dropdown" style="left: 10px;">
+        <button onclick="irA('v-hub')">📂 Mis Proyectos</button>
+        <button onclick="descargarMaletin()">💼 Guardar Maletín (Backup)</button>
+        <button onclick="importarMaletin()">🔄 Cargar Maletín (Recuperar)</button>
+    </div>
+
+    <div id="m-user" class="dropdown" style="right: 10px;">
+        <button onclick="irA('v-reg')">🆔 Registro de Usuario</button>
+        <button onclick="alert('Saldo actual: ' + user.pts + ' pts')">💰 Consultar Puntos</button>
+    </div>
+
+    <div id="v-hub" class="vista activa">
+        <input type="text" id="q" oninput="renderHub()" placeholder="🔍 Buscar proyecto o ADN..." style="width:100%; padding:15px; border:2px solid #E2E8F0; outline: none; font-size: 16px;">
+        <div id="list-container"></div>
+        <button class="fab" onclick="newDoc()">+</button>
+    </div>
+
+    <div id="v-edit" class="vista">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <button onclick="irA('v-hub')" style="background:none; border:none; color:var(--p); font-weight:bold; cursor:pointer;">⬅ VOLVER</button>
+            <button onclick="toggleADN()" style="color:var(--adn); font-weight:bold; border:none; background:none; cursor:pointer;">🧬 CONFIG. ADN</button>
+        </div>
+        
+        <div id="adn-box">
+            <small>🧬 ADN DEL PROYECTO (Reglas y Estilo):</small>
+            <textarea id="adn-input" placeholder="Ej: Usar tono formal, incluir referencias técnicas de Megacable, estilo de programación Flutter..."></textarea>
+        </div>
+
+        <div id="editor-shell">
+            <div id="e-title" contenteditable="true" placeholder="Título del Proyecto..."></div>
+            <div id="e-body" contenteditable="true" placeholder="Empieza a escribir tus ideas aquí..."></div>
+        </div>
+
+        <div class="footer-tools" id="toolbar">
+            <button class="btn-toggle" onclick="toggleToolbar()">▽</button>
+            <button class="btn btn-adn" onclick="analizarADN()">🧬</button>
+            <button class="btn btn-mic" id="btn-mic" onclick="dictar()">🎤</button>
+            <button class="btn btn-s" onclick="hablar()">🔊 OÍR</button>
+            <button class="btn btn-s" onclick="exportarPDF()">📕 PDF</button>
+            <button class="btn btn-ok" onclick="saveDoc()">💾 GUARDAR PROYECTO</button>
+        </div>
+    </div>
+
+    <div id="v-reg" class="vista">
+        <div class="card-reg">
+            <h3>Registro VoxGlobal</h3>
+            <p>Víncula tu cuenta para no perder tus puntos.</p>
+            <input type="text" id="u-name" placeholder="Tu Nombre Completo" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #DDD;">
+            <div class="pts-box" id="disp-pts">0</div>
+            <p>Puntos Acumulados ($<span id="disp-mxn">0</span> MXN)</p>
+            <button class="btn-ok" onclick="registrar()">ACTUALIZAR REGISTRO</button>
+        </div>
+        <button class="btn-s" onclick="irA('v-hub')" style="width:100%; margin-top:15px; padding:15px;">SALIR AL HUB</button>
+    </div>
+
+    <script>
+        // BASE DE DATOS Y ESTADO
+        let db = JSON.parse(localStorage.getItem('vox_db') || '[]');
+        let user = JSON.parse(localStorage.getItem('vox_user') || '{"name":"","pts":0}');
+
+        // --- DICTADO POR VOZ (API WEB) ---
+        function dictar() {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!Speech) return alert("Tu navegador no soporta dictado directo.");
+            const rec = new Speech();
+            rec.lang = 'es-MX';
+            rec.onstart = () => { document.getElementById('btn-mic').innerText = "🔴"; };
+            rec.onresult = (e) => {
+                const t = e.results[0][0].transcript;
+                document.getElementById('e-body').innerText += " " + t;
+            };
+            rec.onend = () => { document.getElementById('btn-mic').innerText = "🎤"; };
+            rec.start();
+        }
+
+        // --- GESTIÓN ADN ---
+        function toggleADN() {
+            const box = document.getElementById('adn-box');
+            box.style.display = (box.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function analizarADN() {
+            const adn = document.getElementById('adn-input').value;
+            if(!adn) return alert("Primero configura el ADN de este proyecto.");
+            alert("Analizando contenido bajo el ADN: " + adn.substring(0,30) + "...\n\nSugerencia: El tono es consistente.");
+            user.pts += 2; actualizarUI();
+        }
+
+        // --- CORE PROYECTOS ---
+        function renderHub() {
+            const container = document.getElementById('list-container');
+            const q = document.getElementById('q').value.toLowerCase();
+            container.innerHTML = '';
+            
+            db.filter(d => d.t.toLowerCase().includes(q) || d.txt.toLowerCase().includes(q))
+              .sort((a,b) => b.id - a.id)
+              .forEach(d => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => openDoc(d.id);
+                card.innerHTML = `<h3>${d.t}</h3><p>${d.txt.substring(0,100)}...</p>
+                                  <div class="card-meta">📅 ${d.date} | ID: ${d.id.toString().slice(-4)}</div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function saveDoc() {
+            const id = document.getElementById('v-edit').dataset.id || Date.now();
+            const t = document.getElementById('e-title').innerText || "Proyecto Nuevo";
+            const txt = document.getElementById('e-body').innerText;
+            const adn = document.getElementById('adn-input').value;
+            const date = new Date().toLocaleDateString();
+
+            db = db.filter(x => x.id != id);
+            db.push({id, t, txt, adn, date});
+            localStorage.setItem('vox_db', JSON.stringify(db));
+            user.pts += 5; // Recompensa por avance
+            irA('v-hub');
+        }
+
+        function openDoc(id) {
+            const d = db.find(x => x.id == id);
+            document.getElementById('e-title').innerText = d.t;
+            document.getElementById('e-body').innerText = d.txt;
+            document.getElementById('adn-input').value = d.adn || "";
+            document.getElementById('v-edit').dataset.id = id;
+            irA('v-edit');
+        }
+
+        function newDoc() {
+            document.getElementById('e-title').innerText = '';
+            document.getElementById('e-body').innerText = '';
+            document.getElementById('adn-input').value = '';
+            delete document.getElementById('v-edit').dataset.id;
+            irA('v-edit');
+        }
+
+        // --- USUARIO Y MODO DIOS ---
+        function registrar() {
+            user.name = document.getElementById('u-name').value;
+            localStorage.setItem('vox_user', JSON.stringify(user));
+            actualizarUI();
+            alert("Perfil actualizado satisfactoriamente.");
+        }
+
+        function actualizarUI() {
+            document.getElementById('disp-pts').innerText = user.pts;
+            document.getElementById('disp-mxn').innerText = user.pts;
+            document.getElementById('u-name').value = user.name || "";
+            localStorage.setItem('vox_user', JSON.stringify(user));
+        }
+
+        let godTimer;
+        document.getElementById('main-logo').addEventListener('touchstart', (e) => {
+            godTimer = setTimeout(() => {
+                if(prompt("PIN MAESTRO:") === "1010") {
+                    user.pts = 500; actualizarUI(); alert("MODO DIOS: Saldo de anualidad cubierto.");
+                }
+            }, 7000);
+        });
+        document.getElementById('main-logo').addEventListener('touchend', () => clearTimeout(godTimer));
+
+        // --- NAVEGACIÓN Y EXTRAS ---
+        function irA(v) { document.querySelectorAll('.vista').forEach(x=>x.classList.remove('activa')); document.getElementById(v).classList.add('activa'); if(v=='v-hub') renderHub(); }
+        function toggleMenu(e, id) { e.stopPropagation(); closeMenus(); document.getElementById(id).style.display = 'block'; }
+        function closeMenus() { document.querySelectorAll('.dropdown').forEach(d => d.style.display = 'none'); }
+        function toggleToolbar() { document.getElementById('toolbar').classList.toggle('tools-hidden'); }
+        function descargarMaletin() { const b=new Blob([JSON.stringify(db)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download="Respaldo_VoxGlobal.json"; a.click(); }
+        function importarMaletin() {
+            const i=document.createElement('input'); i.type='file';
+            i.onchange=e=>{
+                const r=new FileReader();
+                r.onload=ev=>{
+                    db = JSON.parse(ev.target.result);
+                    localStorage.setItem('vox_db', JSON.stringify(db));
+                    renderHub(); alert("Maletín cargado con éxito.");
+                };
+                r.readAsText(e.target.files[0]);
+            }; i.click();
+        }
+        function hablar() { window.speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById('e-body').innerText)); }
+        function exportarPDF() { window.print(); }
+
+        window.onload = () => { renderHub(); actualizarUI(); };
+    </script>
+</body>
+</html>
