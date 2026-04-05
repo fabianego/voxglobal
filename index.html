@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VoxGlobal Pro V4.8</title>
+    <style>
+        :root { --p: #2563EB; --bg: #F1F5F9; --txt: #1E293B; --adn: #8B5CF6; --danger: #EF4444; }
+        * { box-sizing: border-box; font-family: sans-serif; border-radius: 10px; }
+        body { margin: 0; background: var(--bg); color: var(--txt); }
+        
+        /* HEADER */
+        header { background: white; padding: 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #DDD; position: sticky; top: 0; z-index: 1000; }
+        .logo { font-weight: 900; color: var(--p); cursor: pointer; user-select: none; }
+        
+        /* VISTAS */
+        .vista { display: none; padding: 15px; }
+        .activa { display: block; }
+
+        /* HUB */
+        #list-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .card { background: white; padding: 12px; border: 1px solid #CCC; height: 150px; overflow: hidden; cursor: pointer; position: relative; }
+        .card h3 { margin: 0; font-size: 14px; color: var(--p); }
+        .card p { font-size: 11px; color: #666; }
+
+        /* EDITOR */
+        #editor-shell { background: white; padding: 15px; border: 1px solid #CCC; min-height: 400px; }
+        #e-title { font-size: 20px; font-weight: bold; border-bottom: 1px solid #EEE; margin-bottom: 10px; outline: none; }
+        #e-body { font-size: 16px; min-height: 350px; outline: none; white-space: pre-wrap; }
+
+        /* ADN */
+        #adn-area { display: none; background: #EEE; padding: 10px; margin-bottom: 10px; border: 2px solid var(--adn); }
+        #adn-text { width: 100%; height: 60px; font-size: 12px; }
+
+        /* BOTONES */
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 10px; border-top: 2px solid var(--p); display: flex; flex-wrap: wrap; gap: 5px; z-index: 1100; transition: 0.3s; }
+        .footer.oculto { transform: translateY(80%); }
+        .btn { flex: 1; padding: 12px; border: none; color: white; font-weight: bold; cursor: pointer; font-size: 12px; }
+        .btn-hide { background: #64748B; flex: 0 0 45px; }
+        .btn-adn { background: var(--adn); flex: 0 0 45px; }
+        .btn-mic { background: var(--danger); flex: 0 0 45px; }
+        .btn-p { background: var(--p); } .btn-ok { background: #10B981; width: 100%; flex: none; margin-top: 5px; }
+
+        /* DROPDOWN */
+        .menu { display: none; position: absolute; top: 50px; background: white; border: 1px solid #CCC; width: 200px; z-index: 2000; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .menu button { width: 100%; padding: 12px; border: none; text-align: left; background: none; border-bottom: 1px solid #EEE; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <button onclick="toggleMenu('m-main')" style="background:none; border:none; font-size:20px;">☰</button>
+        <div class="logo" id="logo" onmousedown="startGod()" onmouseup="stopGod()" ontouchstart="startGod()" ontouchend="stopGod()">VOXGLOBAL PRO V4.8</div>
+        <button onclick="toggleMenu('m-user')" style="background:none; border:none; font-size:20px;">👤</button>
+    </header>
+
+    <div id="m-main" class="menu" style="left:10px;">
+        <button onclick="irA('v-hub')">📂 Proyectos</button>
+        <button onclick="descargar()">💼 Guardar Maletín</button>
+        <button onclick="cargar()">🔄 Cargar Maletín</button>
+    </div>
+
+    <div id="m-user" class="menu" style="right:10px;">
+        <button onclick="irA('v-reg')">🆔 Registro/Puntos</button>
+        <button onclick="alert('Puntos: ' + user.pts)">💰 Mi Saldo</button>
+    </div>
+
+    <div id="v-hub" class="vista activa">
+        <input type="text" id="busq" oninput="renderHub()" placeholder="Buscar..." style="width:100%; padding:12px; margin-bottom:10px;">
+        <div id="list-container"></div>
+        <button onclick="nuevo()" style="position:fixed; bottom:120px; right:20px; width:60px; height:60px; border-radius:50%; background:var(--p); color:white; border:none; font-size:30px;">+</button>
+    </div>
+
+    <div id="v-edit" class="vista">
+        <button onclick="irA('v-hub')" style="margin-bottom:10px;">⬅ VOLVER</button>
+        <div id="adn-area">
+            <textarea id="adn-text" placeholder="ADN de este proyecto..."></textarea>
+        </div>
+        <div id="editor-shell">
+            <div id="e-title" contenteditable="true" placeholder="Título..."></div>
+            <div id="e-body" contenteditable="true" placeholder="Escribe aquí..."></div>
+        </div>
+        <div class="footer" id="tools">
+            <button class="btn btn-hide" onclick="toggleTools()">👁️</button>
+            <button class="btn btn-adn" onclick="toggleADN()">🧬</button>
+            <button class="btn btn-mic" onclick="dictar()">🎤</button>
+            <button class="btn btn-p" onclick="hablar()">🔊</button>
+            <button class="btn btn-p" onclick="window.print()">📕</button>
+            <button class="btn btn-ok" onclick="guardar()">💾 GUARDAR PROYECTO</button>
+        </div>
+    </div>
+
+    <div id="v-reg" class="vista">
+        <div style="background:white; padding:20px; border:2px solid var(--p);">
+            <h3>Registro</h3>
+            <input type="text" id="u-name" placeholder="Tu Nombre" style="width:100%; padding:10px; margin-bottom:10px;">
+            <p>Puntos: <b id="pts-val">0</b> ($<span id="mxn-val">0</span> MXN)</p>
+            <button onclick="saveUser()" style="width:100%; padding:10px; background:var(--p); color:white; border:none;">GUARDAR</button>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('vox_db') || '[]');
+        let user = JSON.parse(localStorage.getItem('vox_user') || '{"name":"","pts":0}');
+        let godTimer;
+
+        function irA(v) { document.querySelectorAll('.vista').forEach(x=>x.classList.remove('activa')); document.getElementById(v).classList.add('activa'); if(v=='v-hub') renderHub(); }
+        function toggleMenu(id) { 
+            const m = document.getElementById(id);
+            m.style.display = (m.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function renderHub() {
+            const cont = document.getElementById('list-container');
+            const q = document.getElementById('busq').value.toLowerCase();
+            cont.innerHTML = '';
+            db.filter(d => d.t.toLowerCase().includes(q)).forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.onclick = () => {
+                    document.getElementById('e-title').innerText = d.t;
+                    document.getElementById('e-body').innerText = d.txt;
+                    document.getElementById('adn-text').value = d.adn || '';
+                    document.getElementById('v-edit').dataset.id = d.id;
+                    irA('v-edit');
+                };
+                div.innerHTML = `<h3>${d.t}</h3><p>${d.txt.substring(0,60)}...</p>`;
+                cont.appendChild(div);
+            });
+        }
+
+        function guardar() {
+            const id = document.getElementById('v-edit').dataset.id || Date.now();
+            const t = document.getElementById('e-title').innerText || "Sin Título";
+            const txt = document.getElementById('e-body').innerText;
+            const adn = document.getElementById('adn-text').value;
+            db = db.filter(x => x.id != id);
+            db.push({id, t, txt, adn});
+            localStorage.setItem('vox_db', JSON.stringify(db));
+            alert("Guardado.");
+            irA('v-hub');
+        }
+
+        function nuevo() {
+            document.getElementById('e-title').innerText = '';
+            document.getElementById('e-body').innerText = '';
+            document.getElementById('adn-text').value = '';
+            delete document.getElementById('v-edit').dataset.id;
+            irA('v-edit');
+        }
+
+        function startGod() { godTimer = setTimeout(() => { if(prompt("PIN:")=="1010"){ user.pts=500; updateUI(); alert("MODO DIOS"); } }, 5000); }
+        function stopGod() { clearTimeout(godTimer); }
+
+        function toggleTools() { document.getElementById('tools').classList.toggle('oculto'); }
+        function toggleADN() { const a = document.getElementById('adn-area'); a.style.display = (a.style.display=='block')?'none':'block'; }
+        
+        function dictar() {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!Speech) return alert("No soportado");
+            const rec = new Speech();
+            rec.lang = 'es-MX';
+            rec.onresult = (e) => { document.getElementById('e-body').innerText += " " + e.results[0][0].transcript; };
+            rec.start();
+        }
+
+        function updateUI() {
+            document.getElementById('pts-val').innerText = user.pts;
+            document.getElementById('mxn-val').innerText = user.pts;
+            document.getElementById('u-name').value = user.name;
+            localStorage.setItem('vox_user', JSON.stringify(user));
+        }
+
+        function saveUser() { user.name = document.getElementById('u-name').value; updateUI(); alert("OK"); }
+        function hablar() { window.speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById('e-body').innerText)); }
+        function descargar() { const b=new Blob([JSON.stringify(db)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download="vox.json"; a.click(); }
+        function cargar() { const i=document.createElement('input'); i.type='file'; i.onchange=e=>{ const r=new FileReader(); r.onload=ev=>{ db=JSON.parse(ev.target.result); localStorage.setItem('vox_db',JSON.stringify(db)); renderHub(); }; r.readAsText(e.target.files[0]); }; i.click(); }
+
+        window.onload = () => { renderHub(); updateUI(); };
+    </script>
+</body>
+</html>
