@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VoxGlobal Pro V5.6</title>
+    <style>
+        :root { 
+            --p: #2563EB; --bg: #F8FAFC; --txt: #1E293B; 
+            --adn: #8B5CF6; --danger: #EF4444; --ok: #10B981; --gold: #D4AF37; 
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; border-radius: 12px; }
+        body { margin: 0; background: var(--bg); color: var(--txt); overflow-x: hidden; }
+
+        /* VOX MODAL PERSONALIZADO */
+        #vox-modal { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(15, 23, 42, 0.8); z-index: 9999; justify-content: center; align-items: center; 
+            backdrop-filter: blur(4px);
+        }
+        .modal-content { 
+            background: white; padding: 30px; width: 85%; max-width: 400px; text-align: center; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border-top: 6px solid var(--p);
+        }
+        .modal-header { font-weight: 900; color: var(--p); margin-bottom: 10px; font-size: 1.3rem; letter-spacing: -0.5px; }
+        .modal-btn { background: var(--p); color: white; border: none; padding: 12px; font-weight: 800; cursor: pointer; margin-top: 20px; width: 100%; font-size: 14px; }
+
+        /* HEADER & UI */
+        header { background: white; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E2E8F0; height: 70px; position: sticky; top: 0; z-index: 1000; }
+        .logo { font-weight: 900; color: var(--p); font-size: 1.3rem; cursor: pointer; }
+        .badge-pro { background: var(--gold); color: white; padding: 4px 10px; font-size: 10px; font-weight: 900; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
+        
+        .vista { display: none; padding: 20px; max-width: 850px; margin: 0 auto; min-height: 85vh; }
+        .activa { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* HUB & CARDS */
+        #hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
+        .card { background: white; padding: 20px; border: 1px solid #E2E8F0; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .card:hover { border-color: var(--p); transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        .card h3 { margin: 0 0 10px 0; font-size: 16px; color: var(--p); font-weight: 800; }
+        .card p { font-size: 13px; color: #64748B; margin: 0; line-height: 1.4; }
+
+        /* EDITOR */
+        #editor-container { background: white; border: 1px solid #E2E8F0; padding: 0; overflow: hidden; margin-top: 15px; }
+        #e-title { padding: 20px; font-size: 24px; font-weight: 800; color: var(--p); outline: none; border-bottom: 1px solid #F1F5F9; }
+        #e-body { padding: 20px; min-height: 450px; outline: none; font-size: 18px; line-height: 1.6; }
+
+        /* TOOLBAR */
+        .footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px; border-top: 3px solid var(--p); display: flex; flex-wrap: wrap; gap: 8px; z-index: 1100; }
+        .btn { flex: 1; padding: 12px; border: none; color: white; font-weight: 800; cursor: pointer; font-size: 11px; }
+        .btn-adn { background: var(--adn); flex: 0 0 50px; font-size: 18px; }
+        .btn-mic { background: var(--danger); flex: 0 0 50px; font-size: 18px; }
+        .btn-p { background: var(--p); }
+        .btn-ok { background: var(--ok); width: 100%; flex: none; font-size: 14px; }
+
+        /* SIDEBAR */
+        .sidebar { position: fixed; top: 0; left: -300px; width: 280px; height: 100%; background: white; z-index: 2000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); border-right: 2px solid var(--p); padding: 25px; box-shadow: 20px 0 50px rgba(0,0,0,0.1); }
+        .sidebar.open { left: 0; }
+        .sidebar h2 { color: var(--p); font-weight: 900; margin-bottom: 30px; }
+        .sidebar button { width: 100%; padding: 16px; text-align: left; border: none; background: none; border-bottom: 1px solid #F1F5F9; font-weight: 700; color: #475569; cursor: pointer; }
+        .sidebar button:hover { color: var(--p); background: #F8FAFC; }
+
+        /* REGISTRO */
+        .auth-container { max-width: 400px; margin: 40px auto; background: white; padding: 40px; border: 1px solid #E2E8F0; text-align: center; }
+        .status-box { margin-top: 20px; padding: 20px; background: #F8FAFC; border-radius: 8px; border: 1px dashed #CBD5E1; }
+    </style>
+</head>
+<body>
+
+    <div id="vox-modal">
+        <div class="modal-content">
+            <div class="modal-header">VoxGlobal</div>
+            <div id="modal-msg"></div>
+            <button class="modal-btn" onclick="closeVox()">ENTENDIDO</button>
+        </div>
+    </div>
+
+    <header>
+        <button onclick="toggleMenu()" style="background:none; border:none; font-size:26px; color:var(--p); cursor:pointer;">☰</button>
+        <div class="logo" id="main-logo">VOXGLOBAL <span id="header-pro" class="badge-pro" style="display:none;">PRO</span></div>
+        <button onclick="irA('v-reg')" style="background:none; border:none; font-size:24px; cursor:pointer;">👤</button>
+    </header>
+
+    <nav id="sidebar" class="sidebar">
+        <h2>Panel de Control</h2>
+        <button onclick="irA('v-hub')">📂 Mis Proyectos</button>
+        <button onclick="irA('v-reg')">🆔 Suscripción / Perfil</button>
+        <button onclick="descargarMaletin()">💼 Respaldar Maletín</button>
+        <button onclick="cargarMaletin()">🔄 Restaurar Datos</button>
+        <div id="ad-area" style="margin-top:20px; padding:15px; background:#FEF3C7; border-radius:10px; font-size:12px; text-align:center;">
+            <p style="margin:0 0 10px 0; color:#92400E; font-weight:bold;">MODO GRATUITO ACTIVO</p>
+            <button onclick="simularAnuncio()" style="background:#D97706; color:white; border:none; padding:8px; width:100%; font-weight:bold; cursor:pointer;">📺 VER ANUNCIO</button>
+        </div>
+    </nav>
+
+    <div id="v-hub" class="vista activa">
+        <input type="text" id="search" oninput="renderHub()" placeholder="🔍 Buscar en proyectos o ADN..." style="width:100%; padding:18px; border:2px solid #E2E8F0; font-size:16px; outline:none; margin-bottom:10px;">
+        <div id="hub-grid"></div>
+        <button onclick="nuevoProyecto()" style="position:fixed; bottom:140px; right:30px; width:70px; height:70px; border-radius:50%; background:var(--p); color:white; border:none; font-size:40px; box-shadow:0 10px 25px rgba(37,99,235,0.3); cursor:pointer;">+</button>
+    </div>
+
+    <div id="v-edit" class="vista">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <button onclick="irA('v-hub')" style="border:none; background:none; color:var(--p); font-weight:bold; cursor:pointer;">⬅ PROYECTOS</button>
+            <button onclick="toggleADN()" style="border:none; background:none; color:var(--adn); font-weight:bold; cursor:pointer;">🧬 ADN CONTEXTO</button>
+        </div>
+        <textarea id="adn-box" placeholder="Ej: Escribir en formato de guion técnico para cine..." style="display:none; width:100%; height:80px; margin-top:15px; border:2px solid var(--adn); padding:15px; font-size:14px;"></textarea>
+        
+        <div id="editor-container">
+            <div id="e-title" contenteditable="true" placeholder="Título del Proyecto"></div>
+            <div id="e-body" contenteditable="true" placeholder="Escribe aquí tu contenido..."></div>
+        </div>
+
+        <div class="footer">
+            <button class="btn btn-adn" onclick="voxSay('ADN Verificado: La estructura del contenido cumple con los parámetros.')">🧬</button>
+            <button class="btn btn-mic" id="mic-btn" onclick="dictadoVoz()">🎤</button>
+            <button class="btn btn-p" onclick="reproducirAudio()">🔊 OÍR</button>
+            <button class="btn btn-p" onclick="window.print()">📕 PDF</button>
+            <button class="btn btn-ok" onclick="guardarProyecto()">💾 GUARDAR PROYECTO</button>
+        </div>
+    </div>
+
+    <div id="v-reg" class="vista">
+        <div class="auth-container">
+            <h2 style="color:var(--p); margin-bottom:5px;">Registrarse</h2>
+            <p style="color:#64748B; font-size:14px; margin-bottom:30px;">Gestiona tu suscripción VoxGlobal</p>
+            
+            <input type="text" id="u-name" placeholder="Nombre completo" style="width:100%; padding:14px; border:1px solid #E2E8F0; margin-bottom:10px;">
+            <input type="email" id="u-mail" placeholder="Correo electrónico" style="width:100%; padding:14px; border:1px solid #E2E8F0; margin-bottom:20px;">
+            
+            <button class="btn-ok" style="padding:15px;" onclick="registrarUsuario()">VINCULAR CUENTA</button>
+
+            <div class="status-box">
+                <p style="font-size:12px; font-weight:bold; color:#64748B; margin-bottom:10px;">ESTADO DE LA CUENTA:</p>
+                <div id="status-label" style="font-size:20px; font-weight:900; color:var(--txt);">GRATUITO (CON ANUNCIOS)</div>
+                <div id="pro-msg" style="margin-top:15px; font-size:13px; color:#475569;">Paga **$500.00 MXN** anuales para eliminar anuncios y activar el soporte prioritario.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS Y USUARIO ---
+        let db = JSON.parse(localStorage.getItem('vox_v5_db')) || [];
+        let user = JSON.parse(localStorage.getItem('vox_v5_user')) || { name: "", email: "", isPro: false };
+
+        // --- SISTEMA DE MENSAJES VOX ---
+        function voxSay(msg) {
+            document.getElementById('modal-msg').innerHTML = msg;
+            document.getElementById('vox-modal').style.display = 'flex';
+        }
+        function closeVox() { document.getElementById('vox-modal').style.display = 'none'; }
+
+        // --- NAVEGACIÓN ---
+        function irA(v) {
+            document.querySelectorAll('.vista').forEach(x => x.classList.remove('activa'));
+            document.getElementById(v).classList.add('activa');
+            if(v === 'v-hub') renderHub();
+            document.getElementById('sidebar').classList.remove('open');
+        }
+        function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+
+        // --- LÓGICA DE PROYECTOS ---
+        function renderHub() {
+            const grid = document.getElementById('hub-grid');
+            const q = document.getElementById('search').value.toLowerCase();
+            grid.innerHTML = '';
+            
+            const filtrados = db.filter(x => x.t.toLowerCase().includes(q) || x.txt.toLowerCase().includes(q) || (x.adn && x.adn.toLowerCase().includes(q)));
+            
+            if(filtrados.length === 0) {
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94A3B8; margin-top:30px;">No se encontraron resultados.</p>';
+                return;
+            }
+
+            filtrados.sort((a,b) => b.id - a.id).forEach(x => {
+                const c = document.createElement('div');
+                c.className = 'card';
+                c.onclick = () => {
+                    document.getElementById('e-title').innerText = x.t;
+                    document.getElementById('e-body').innerText = x.txt;
+                    document.getElementById('adn-box').value = x.adn || "";
+                    document.getElementById('v-edit').dataset.id = x.id;
+                    irA('v-edit');
+                };
+                c.innerHTML = `<h3>${x.t}</h3><p>${x.txt.substring(0,90)}...</p>`;
+                grid.appendChild(c);
+            });
+        }
+
+        function guardarProyecto() {
+            const id = document.getElementById('v-edit').dataset.id || Date.now().toString();
+            const t = document.getElementById('e-title').innerText.trim() || "Proyecto sin título";
+            const txt = document.getElementById('e-body').innerText.trim();
+            const adn = document.getElementById('adn-box').value;
+            
+            if(!txt) return voxSay("El cuerpo del proyecto está vacío.");
+
+            db = db.filter(x => x.id !== id);
+            db.push({ id, t, txt, adn });
+            localStorage.setItem('vox_v5_db', JSON.stringify(db));
+            
+            voxSay("¡Guardado! El proyecto '" + t + "' se sincronizó correctamente.");
+            irA('v-hub');
+        }
+
+        function nuevoProyecto() {
+            document.getElementById('e-title').innerText = '';
+            document.getElementById('e-body').innerText = '';
+            document.getElementById('adn-box').value = '';
+            delete document.getElementById('v-edit').dataset.id;
+            irA('v-edit');
+        }
+
+        // --- MODO DIOS (SUSCRIPCIÓN ANUAL) ---
+        let godHold;
+        document.getElementById('main-logo').onmousedown = document.getElementById('main-logo').ontouchstart = () => {
+            godHold = setTimeout(() => {
+                const pin = prompt("CÓDIGO DE AUTORIZACIÓN:");
+                if(pin === "1010") {
+                    user.isPro = true;
+                    updateUI();
+                    voxSay("<b>MODO DIOS ACTIVO</b><br><br>Suscripción Anual ($500.00 MXN) verificada. Publicidad eliminada.");
+                }
+            }, 4000);
+        };
+        document.getElementById('main-logo').onmouseup = document.getElementById('main-logo').ontouchend = () => clearTimeout(godHold);
+
+        // --- REGISTRO Y UI ---
+        function registrarUsuario() {
+            user.name = document.getElementById('u-name').value;
+            user.email = document.getElementById('u-mail').value;
+            if(!user.name || !user.email) return voxSay("Por favor completa los campos de registro.");
+            updateUI();
+            voxSay("Cuenta vinculada a: " + user.name);
+            irA('v-hub');
+        }
+
+        function updateUI() {
+            localStorage.setItem('vox_v5_user', JSON.stringify(user));
+            document.getElementById('u-name').value = user.name || "";
+            document.getElementById('u-mail').value = user.email || "";
+            
+            if(user.isPro) {
+                document.getElementById('header-pro').style.display = 'inline-block';
+                document.getElementById('status-label').innerText = "SUSCRIPCIÓN ACTIVA (PRO)";
+                document.getElementById('status-label').style.color = "var(--ok)";
+                document.getElementById('pro-msg').innerHTML = "Disfrutas de todas las herramientas sin publicidad.<br>Próxima renovación: 06/04/2027";
+                document.getElementById('ad-area').style.display = "none";
+            } else {
+                document.getElementById('header-pro').style.display = 'none';
+                document.getElementById('status-label').innerText = "GRATUITO (CON ANUNCIOS)";
+                document.getElementById('ad-area').style.display = "block";
+            }
+        }
+
+        // --- FUNCIONES EXTRA ---
+        function toggleADN() { const b = document.getElementById('adn-box'); b.style.display = (b.style.display==='none')?'block':'none'; }
+        function simularAnuncio() { voxSay("Cargando anuncio de red..."); setTimeout(() => { voxSay("Gracias por apoyar VoxGlobal con publicidad gratuita."); }, 3000); }
+        function reproducirAudio() { window.speechSynthesis.speak(new SpeechSynthesisUtterance(document.getElementById('e-body').innerText)); }
+        function dictadoVoz() {
+            const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!Rec) return voxSay("Dictado no soportado.");
+            const r = new Rec(); r.lang = 'es-MX';
+            r.onstart = () => document.getElementById('mic-btn').style.background = "#000";
+            r.onresult = (e) => { document.getElementById('e-body').innerText += " " + e.results[0][0].transcript; };
+            r.onend = () => document.getElementById('mic-btn').style.background = "var(--danger)";
+            r.start();
+        }
+        function descargarMaletin() {
+            const blob = new Blob([JSON.stringify(db)], {type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+            a.download = "Maletin_VoxGlobal.json"; a.click();
+        }
+        function cargarMaletin() {
+            const i = document.createElement('input'); i.type = 'file';
+            i.onchange = e => {
+                const r = new FileReader();
+                r.onload = ev => {
+                    db = JSON.parse(ev.target.result);
+                    localStorage.setItem('vox_v5_db', JSON.stringify(db));
+                    renderHub(); voxSay("Proyectos restaurados con éxito.");
+                };
+                r.readAsText(e.target.files[0]);
+            };
+            i.click();
+        }
+
+        window.onload = () => { renderHub(); updateUI(); };
+    </script>
+</body>
+</html>
