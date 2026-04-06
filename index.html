@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VoxGlobal Pro V5.4</title>
+    <style>
+        :root { 
+            --p: #2563EB; --p-dark: #1E40AF; --bg: #F8FAFC; --txt: #1E293B; 
+            --adn: #8B5CF6; --danger: #EF4444; --ok: #10B981; --gold: #D4AF37; 
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+        }
+        * { box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; border-radius: 12px; transition: all 0.2s ease; }
+        body { margin: 0; background: var(--bg); color: var(--txt); overflow-x: hidden; line-height: 1.5; }
+        
+        /* HEADER AVANZADO */
+        header { 
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            padding: 0 20px; display: flex; justify-content: space-between; align-items: center; 
+            border-bottom: 1px solid #E2E8F0; position: sticky; top: 0; z-index: 1000; height: 70px;
+            box-shadow: var(--shadow);
+        }
+        .logo { font-weight: 900; color: var(--p); cursor: pointer; user-select: none; font-size: 1.3rem; letter-spacing: -0.5px; }
+        
+        /* CONTENEDORES DE VISTA */
+        .vista { display: none; padding: 20px; max-width: 900px; margin: 0 auto; min-height: calc(100vh - 70px); }
+        .activa { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* REGISTRARSE - UI MODERNA */
+        .auth-card { background: white; padding: 40px; border: 1px solid #E2E8F0; text-align: center; box-shadow: var(--shadow); max-width: 400px; margin: 40px auto; }
+        .auth-methods { display: flex; flex-direction: column; gap: 12px; margin: 25px 0; }
+        .auth-btn { 
+            width: 100%; padding: 14px; border: 1px solid #E2E8F0; display: flex; 
+            align-items: center; justify-content: center; gap: 12px; font-weight: 600; 
+            cursor: pointer; background: white; font-size: 14px;
+        }
+        .auth-btn:active { transform: scale(0.98); background: #F8FAFC; }
+        .btn-google { color: #444; border-color: #DDD; }
+        .btn-fb { background: #1877F2; color: white; border: none; }
+
+        /* HUB DE PROYECTOS */
+        .search-bar { position: relative; margin-bottom: 25px; }
+        .search-bar input { width: 100%; padding: 16px 20px; border: 2px solid #E2E8F0; font-size: 16px; outline: none; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .search-bar input:focus { border-color: var(--p); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+        
+        #hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        .card { 
+            background: white; padding: 20px; border: 1px solid #E2E8F0; height: 180px; 
+            cursor: pointer; display: flex; flex-direction: column; justify-content: space-between;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+        }
+        .card:hover { border-color: var(--p); transform: translateY(-3px); box-shadow: var(--shadow); }
+        .card h3 { margin: 0; font-size: 16px; color: var(--p); font-weight: 800; }
+        .card p { font-size: 13px; color: #64748B; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+
+        /* EDITOR PRO */
+        #editor-container { background: white; border: 1px solid #E2E8F0; padding: 0; overflow: hidden; box-shadow: var(--shadow); }
+        .editor-header { background: #F1F5F9; padding: 10px 20px; display: flex; justify-content: space-between; border-bottom: 1px solid #E2E8F0; }
+        #e-title { padding: 20px; font-size: 24px; font-weight: 900; color: var(--p); outline: none; border-bottom: 1px solid #F1F5F9; }
+        #e-body { padding: 20px; min-height: 400px; outline: none; font-size: 18px; line-height: 1.7; color: #334155; }
+
+        /* FOOTER DINÁMICO */
+        .footer { 
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; 
+            border-top: 4px solid var(--p); display: flex; flex-wrap: wrap; gap: 10px; z-index: 1100;
+            box-shadow: 0 -10px 20px rgba(0,0,0,0.05);
+        }
+        .footer.hidden { transform: translateY(90%); }
+        .btn-toggle { 
+            position: absolute; top: -40px; right: 30px; background: var(--p); color: white; 
+            border: none; padding: 8px 20px; border-radius: 12px 12px 0 0; font-weight: 800; cursor: pointer;
+        }
+
+        .btn { padding: 15px; border: none; color: white; font-weight: 800; cursor: pointer; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; }
+        .btn-adn { background: var(--adn); width: 60px; font-size: 20px; }
+        .btn-mic { background: var(--danger); width: 60px; font-size: 20px; }
+        .btn-p { background: #475569; flex: 1; }
+        .btn-save { background: var(--ok); width: 100%; font-size: 16px; margin-top: 5px; }
+
+        /* MENÚ SIDEBAR */
+        .sidebar { 
+            position: fixed; top: 0; left: -300px; width: 280px; height: 100%; 
+            background: white; z-index: 2000; box-shadow: 20px 0 50px rgba(0,0,0,0.2);
+            padding: 20px; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar button { 
+            width: 100%; padding: 16px; text-align: left; background: none; border: none; 
+            border-bottom: 1px solid #F1F5F9; font-weight: 700; color: #475569; cursor: pointer;
+        }
+        .sidebar button:hover { background: #F8FAFC; color: var(--p); }
+
+        .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1500; }
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+    <header>
+        <button onclick="toggleSidebar()" style="background:none; border:none; font-size:28px; color:var(--p); cursor:pointer;">☰</button>
+        <div class="logo" id="vox-logo">VOXGLOBAL V5.4</div>
+        <div id="pts-badge" style="background:var(--gold); color:white; padding:5px 12px; font-weight:900; font-size:12px; border-radius:20px;">0 PTS</div>
+    </header>
+
+    <nav class="sidebar" id="sidebar">
+        <h2 style="color:var(--p); margin-bottom:30px;">Menú Principal</h2>
+        <button onclick="irA('v-hub')">📂 Mis Proyectos</button>
+        <button onclick="irA('v-reg')">🆔 Registrarse</button>
+        <button onclick="descargarMaletin()">💼 Guardar Maletín (Backup)</button>
+        <button onclick="cargarMaletin()">🔄 Cargar Maletín</button>
+        <button onclick="simularAd()" style="background:var(--gold); color:white; margin-top:20px; border-radius:10px;">📺 Ver Logo (+50 Puntos)</button>
+    </nav>
+
+    <div id="v-hub" class="vista activa">
+        <div class="search-bar">
+            <input type="text" id="main-search" oninput="renderHub()" placeholder="Buscar por título, contenido o ADN...">
+        </div>
+        <div id="hub-grid"></div>
+        <button onclick="nuevoProyecto()" style="position:fixed; bottom:140px; right:30px; width:70px; height:70px; border-radius:50%; background:var(--p); color:white; border:none; font-size:40px; box-shadow: 0 10px 20px rgba(37,99,235,0.4); z-index:900; cursor:pointer;">+</button>
+    </div>
+
+    <div id="v-edit" class="vista">
+        <div class="editor-header">
+            <button onclick="irA('v-hub')" style="background:none; border:none; color:var(--p); font-weight:bold; cursor:pointer;">⬅ REGRESAR</button>
+            <button onclick="toggleADN()" style="background:none; border:none; color:var(--adn); font-weight:bold; cursor:pointer;">🧬 ADN CONTEXTO</button>
+        </div>
+        
+        <div id="adn-panel" style="display:none; background:#F5F3FF; padding:15px; border:2px solid var(--adn); margin:10px 0;">
+            <label style="font-size:12px; font-weight:bold; color:var(--adn);">PARÁMETROS DE INTELIGENCIA (ADN):</label>
+            <textarea id="adn-text" placeholder="Ej: 'Responder en tono profesional', 'Formato de guion de radio'..." style="width:100%; height:80px; margin-top:10px; padding:10px; border:1px solid #DDD; resize:none;"></textarea>
+        </div>
+
+        <div id="editor-container">
+            <div id="e-title" contenteditable="true" placeholder="Título del Proyecto"></div>
+            <div id="e-body" contenteditable="true" placeholder="Escribe o dicta aquí tu contenido..."></div>
+        </div>
+
+        <div class="footer" id="main-toolbar">
+            <button class="btn-toggle" onclick="toggleToolbar()" id="tgl-btn">▽ HERRAMIENTAS</button>
+            <button class="btn btn-adn" onclick="voxSay('ADN Activo para este proyecto.')">🧬</button>
+            <button class="btn btn-mic" id="mic-btn" onclick="activarMicrofono()">🎤</button>
+            <button class="btn btn-p" onclick="reproducirTexto()">🔊 OÍR</button>
+            <button class="btn btn-p" onclick="generarPDF()">📕 PDF</button>
+            <button class="btn btn-save" onclick="guardarProyecto()">💾 GUARDAR PROYECTO</button>
+        </div>
+    </div>
+
+    <div id="v-reg" class="vista">
+        <div class="auth-card">
+            <h2 style="color:var(--p); margin:0;">Bienvenido a VoxGlobal</h2>
+            <p style="color:#64748B; font-size:14px;">Regístrate para sincronizar tus datos.</p>
+
+            <div class="auth-methods">
+                <button class="auth-btn btn-google" onclick="socialAuth('Google')">
+                    <img src="https://www.google.com/favicon.ico" width="16"> Continuar con Google
+                </button>
+                <button class="auth-btn btn-fb" onclick="socialAuth('Facebook')">
+                    Continuar con Facebook
+                </button>
+            </div>
+
+            <div style="margin:20px 0; font-size:12px; color:#CBD5E1; text-transform:uppercase; letter-spacing:1px;">O usa tu email</div>
+
+            <input type="email" id="u-email" placeholder="Email" style="width:100%; padding:14px; margin-bottom:10px; border:1px solid #E2E8F0;">
+            <input type="text" id="u-name" placeholder="Nombre completo" style="width:100%; padding:14px; margin-bottom:15px; border:1px solid #E2E8F0;">
+            
+            <button class="btn btn-save" onclick="completarRegistro()">FINALIZAR REGISTRO</button>
+            
+            <div id="stats-container" style="margin-top:30px; padding-top:20px; border-top:1px solid #F1F5F9;">
+                <span style="font-size:12px; color:#94A3B8;">SALDO ACTUAL:</span>
+                <div style="font-size:32px; font-weight:900; color:var(--gold);" id="final-pts">0</div>
+                <p style="font-size:12px; color:#64748B;">Equivalente a $<span id="final-mxn">0</span> MXN</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS Y ESTADO ---
+        let db = JSON.parse(localStorage.getItem('vox_db')) || [];
+        let user = JSON.parse(localStorage.getItem('vox_user')) || { name: "", email: "", pts: 0, login: false };
+        let godTimer;
+
+        // --- SISTEMA DE COMUNICACIÓN ---
+        function voxSay(msg) { alert("VoxGlobal dice: \n\n" + msg); }
+
+        // --- NAVEGACIÓN ---
+        function irA(v) {
+            document.querySelectorAll('.vista').forEach(x => x.classList.remove('activa'));
+            document.getElementById(v).classList.add('activa');
+            if(v === 'v-hub') renderHub();
+            if(document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').style.display = 
+                (document.getElementById('sidebar').classList.contains('open')) ? 'block' : 'none';
+        }
+
+        // --- LÓGICA DE PROYECTOS (ESTABLE) ---
+        function renderHub() {
+            const grid = document.getElementById('hub-grid');
+            const q = document.getElementById('main-search').value.toLowerCase();
+            grid.innerHTML = '';
+            
+            const filtrados = db.filter(d => 
+                d.t.toLowerCase().includes(q) || 
+                d.txt.toLowerCase().includes(q) || 
+                (d.adn && d.adn.toLowerCase().includes(q))
+            );
+
+            if(filtrados.length === 0) {
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#94A3B8; margin-top:40px;">No se encontraron proyectos.</p>';
+                return;
+            }
+
+            filtrados.sort((a,b) => b.id - a.id).forEach(d => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => {
+                    document.getElementById('e-title').innerText = d.t;
+                    document.getElementById('e-body').innerText = d.txt;
+                    document.getElementById('adn-text').value = d.adn || '';
+                    document.getElementById('v-edit').dataset.id = d.id;
+                    irA('v-edit');
+                };
+                card.innerHTML = `<div><h3>${d.t}</h3><p>${d.txt}</p></div>
+                                 <div style="font-size:10px; color:#CBD5E1; font-weight:bold;">ID: ${d.id.toString().slice(-5)} | ${d.date}</div>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function guardarProyecto() {
+            const id = document.getElementById('v-edit').dataset.id || Date.now().toString();
+            const title = document.getElementById('e-title').innerText.trim() || "Proyecto sin título";
+            const content = document.getElementById('e-body').innerText.trim();
+            const adn = document.getElementById('adn-text').value;
+
+            if(!content) return voxSay("El proyecto está vacío. Escribe algo antes de guardar.");
+
+            db = db.filter(x => x.id !== id);
+            db.push({ id, t: title, txt: content, adn: adn, date: new Date().toLocaleDateString() });
+            
+            localStorage.setItem('vox_db', JSON.stringify(db));
+            user.pts += 10;
+            actualizarUI();
+            voxSay("Proyecto '" + title + "' sincronizado y guardado.");
+            irA('v-hub');
+        }
+
+        function nuevoProyecto() {
+            document.getElementById('e-title').innerText = '';
+            document.getElementById('e-body').innerText = '';
+            document.getElementById('adn-text').value = '';
+            delete document.getElementById('v-edit').dataset.id;
+            irA('v-edit');
+        }
+
+        // --- MODO DIOS (REVISADO) ---
+        document.getElementById('vox-logo').onmousedown = document.getElementById('vox-logo').ontouchstart = () => {
+            godTimer = setTimeout(() => {
+                const pin = prompt("AUTORIZACIÓN MAESTRA:");
+                if(pin === "1010") {
+                    user.pts = 500;
+                    actualizarUI();
+                    voxSay("MODO DIOS ACTIVO: 500 puntos de anualidad otorgados.");
+                }
+            }, 5000);
+        };
+        document.getElementById('vox-logo').onmouseup = document.getElementById('vox-logo').ontouchend = () => clearTimeout(godTimer);
+
+        // --- AUTH & REGISTRO ---
+        function socialAuth(p) {
+            voxSay("Iniciando sesión con " + p + "...");
+            user.name = p + " User " + Math.floor(Math.random()*100);
+            user.login = true;
+            actualizarUI();
+            irA('v-hub');
+        }
+
+        function completarRegistro() {
+            const n = document.getElementById('u-name').value;
+            const e = document.getElementById('u-email').value;
+            if(!n || !e) return voxSay("Debes completar los campos para registrarse.");
+            user.name = n;
+            user.email = e;
+            user.login = true;
+            actualizarUI();
+            voxSay("Registro completado. Bienvenido, " + n);
+            irA('v-hub');
+        }
+
+        // --- UTILIDADES ---
+        function toggleToolbar() { 
+            const t = document.getElementById('main-toolbar');
+            t.classList.toggle('hidden');
+            document.getElementById('tgl-btn').innerText = t.classList.contains('hidden') ? '△ MOSTRAR' : '▽ OCULTAR';
+        }
+        
+        function toggleADN() { 
+            const p = document.getElementById('adn-panel');
+            p.style.display = (p.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function actualizarUI() {
+            document.getElementById('pts-badge').innerText = user.pts + " PTS";
+            document.getElementById('final-pts').innerText = user.pts;
+            document.getElementById('final-mxn').innerText = user.pts;
+            document.getElementById('u-name').value = user.name || "";
+            document.getElementById('u-email').value = user.email || "";
+            localStorage.setItem('vox_user', JSON.stringify(user));
+        }
+
+        function activarMicrofono() {
+            const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!Rec) return voxSay("Dictado no soportado en este navegador.");
+            const recognition = new Rec();
+            recognition.lang = 'es-MX';
+            recognition.onstart = () => document.getElementById('mic-btn').style.background = "#000";
+            recognition.onresult = (e) => { document.getElementById('e-body').innerText += " " + e.results[0][0].transcript; };
+            recognition.onend = () => document.getElementById('mic-btn').style.background = "var(--danger)";
+            recognition.start();
+        }
+
+        function reproducirTexto() { 
+            const msg = new SpeechSynthesisUtterance(document.getElementById('e-body').innerText);
+            msg.lang = 'es-MX';
+            window.speechSynthesis.speak(msg); 
+        }
+
+        function simularAd() {
+            voxSay("Cargando logo del patrocinador...");
+            setTimeout(() => { user.pts += 50; actualizarUI(); voxSay("¡Felicidades! +50 Puntos acreditados."); }, 3000);
+        }
+
+        function generarPDF() { voxSay("Preparando formato PDF para impresión..."); window.print(); }
+
+        function descargarMaletin() {
+            const data = JSON.stringify(db);
+            const blob = new Blob([data], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "VoxGlobal_Maletin.json";
+            a.click();
+        }
+
+        function cargarMaletin() {
+            const i = document.createElement('input'); i.type = 'file';
+            i.onchange = e => {
+                const r = new FileReader();
+                r.onload = ev => {
+                    db = JSON.parse(ev.target.result);
+                    localStorage.setItem('vox_db', JSON.stringify(db));
+                    renderHub();
+                    voxSay("Maletín cargado con " + db.length + " proyectos.");
+                };
+                r.readAsText(e.target.files[0]);
+            };
+            i.click();
+        }
+
+        window.onload = () => { renderHub(); actualizarUI(); };
+    </script>
+</body>
+</html>
