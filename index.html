@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>VoxGlobal V6.1 - Official App</title>
+    <style>
+        :root { 
+            --p: #2563EB; --bg: #F8FAFC; --txt: #0F172A; 
+            --adn: #7C3AED; --danger: #EF4444; --ok: #10B981; --gold: #D4AF37; 
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; border-radius: 12px; }
+        body { margin: 0; background: var(--bg); color: var(--txt); overflow: hidden; height: 100vh; }
+
+        /* --- SISTEMA DE NOTIFICACIONES (MODALES) --- */
+        #vox-modal { 
+            display: none; position: fixed; inset: 0; 
+            background: rgba(15, 23, 42, 0.7); z-index: 10000; justify-content: center; align-items: center; 
+            backdrop-filter: blur(8px);
+        }
+        .modal-box { 
+            background: white; padding: 35px; width: 90%; max-width: 420px; text-align: center; 
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border-top: 8px solid var(--p);
+            animation: pop 0.3s ease-out;
+        }
+        @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- MURO DE ACCESO OBLIGATORIO (V-AUTH) --- */
+        #v-auth { 
+            position: fixed; inset: 0; background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); 
+            z-index: 9000; display: flex; align-items: center; justify-content: center; overflow-y: auto;
+        }
+        .auth-card { 
+            background: white; padding: 40px; width: 90%; max-width: 450px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin: 20px auto;
+        }
+        .auth-input { width: 100%; padding: 15px; margin-bottom: 15px; border: 2px solid #E2E8F0; font-size: 15px; outline: none; transition: 0.2s; }
+        .auth-input:focus { border-color: var(--p); background: #F0F9FF; }
+        .btn-main { width: 100%; padding: 16px; border: none; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; color: white; background: var(--p); }
+        .btn-gen { background: #F1F5F9; border: 1px solid #CBD5E1; color: var(--txt); padding: 5px 10px; font-size: 10px; font-weight: 800; cursor: pointer; margin-bottom: 10px; }
+        
+        /* --- HEADER & SIDEBAR --- */
+        header { 
+            background: white; padding: 0 20px; display: flex; justify-content: space-between; 
+            align-items: center; border-bottom: 1px solid #E2E8F0; height: 75px; 
+        }
+        .logo { font-weight: 900; color: var(--p); font-size: 1.4rem; cursor: pointer; }
+
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1900; }
+        .sidebar { 
+            position: fixed; top: 0; left: -320px; width: 300px; height: 100%; 
+            background: white; z-index: 2000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            padding: 30px; border-right: 5px solid var(--p);
+        }
+        .sidebar.open { left: 0; }
+        .sidebar.open ~ .overlay { display: block; }
+        .sidebar button { width: 100%; padding: 18px; text-align: left; border: none; background: none; border-bottom: 1px solid #F1F5F9; font-weight: 700; cursor: pointer; color: #475569; }
+
+        /* --- VISTAS --- */
+        .vista { display: none; height: calc(100vh - 75px); padding: 20px; overflow-y: auto; }
+        .activa { display: block; }
+
+        /* --- EDITOR UNIFICADO (VISIBILIDAD CORREGIDA) --- */
+        #editor-frame { 
+            background: white; border: 2px solid #E2E8F0; height: calc(100vh - 250px); 
+            overflow-y: auto; padding: 30px; position: relative; scroll-behavior: smooth;
+        }
+        #e-unified { outline: none; min-height: 100%; font-size: 19px; line-height: 1.8; color: #334155; }
+        #e-unified h1 { margin: 0 0 20px 0; color: var(--p); border-bottom: 3px solid #F1F5F9; padding-bottom: 15px; font-size: 32px; }
+
+        /* --- HERRAMIENTAS (BARRA RETRÁCTIL) --- */
+        .footer { 
+            position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; 
+            border-top: 5px solid var(--p); display: flex; flex-wrap: wrap; gap: 10px; z-index: 1100;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .footer.oculto { transform: translateY(110%); }
+        .btn-tool { flex: 1; padding: 14px; border: none; color: white; font-weight: 800; cursor: pointer; font-size: 11px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .btn-toggle-ui { position: absolute; top: -45px; right: 25px; background: var(--p); color: white; border: none; padding: 8px 18px; font-weight: 900; cursor: pointer; border-radius: 12px 12px 0 0; }
+
+        .btn-float { position: fixed; bottom: 180px; right: 30px; width: 75px; height: 75px; border-radius: 50%; background: var(--p); color: white; border: none; font-size: 45px; box-shadow: 0 15px 30px rgba(37,99,235,0.4); z-index: 800; cursor: pointer; display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="vox-modal" onclick="closeVox()">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h2 id="m-title" style="color:var(--p); margin-top:0;">Notificación</h2>
+            <div id="m-msg" style="margin-bottom: 25px; color:#475569;"></div>
+            <button onclick="closeVox()" class="btn-main">CONTINUAR</button>
+        </div>
+    </div>
+
+    <div id="v-auth">
+        <div class="auth-card" id="auth-reg">
+            <h1 style="color:var(--p); margin:0 0 5px 0;">Registrarse</h1>
+            <p style="font-size:13px; color:#64748B; margin-bottom:25px;">Acceso restringido a usuarios registrados.</p>
+            
+            <input type="text" id="reg-user" class="auth-input" placeholder="Correo Electrónico o Teléfono">
+            
+            <button class="btn-gen" onclick="generarSeguro()">GENERAR CONTRASEÑA SEGURA</button>
+            <input type="password" id="reg-pass" class="auth-input" placeholder="Tu Contraseña">
+            
+            <button class="btn-main" style="background:var(--ok);" onclick="ejecutarRegistro()">GUARDAR Y ACCEDER AL CAMPO</button>
+            
+            <div style="margin:25px 0; text-align:center; font-size:11px; color:#94A3B8; letter-spacing:1px;">O VINCULAR CUENTA</div>
+            
+            <div style="display:flex; gap:10px;">
+                <button onclick="socialLogin('Google')" style="flex:1; padding:12px; border:1px solid #DDD; background:white; font-weight:bold; cursor:pointer;">Google</button>
+                <button onclick="socialLogin('Facebook')" style="flex:1; padding:12px; border:none; background:#1877F2; color:white; font-weight:bold; cursor:pointer;">Facebook</button>
+            </div>
+
+            <button onclick="irARecuperar()" style="background:none; border:none; color:var(--danger); font-size:12px; margin-top:20px; width:100%; cursor:pointer; font-weight:bold;">¿OLVIDASTE TU CONTRASEÑA?</button>
+        </div>
+
+        <div class="auth-card" id="auth-forgot" style="display:none;">
+            <h2 style="color:var(--p);">Recuperar Acceso</h2>
+            <p style="font-size:13px; margin-bottom:20px;">Elegir canal para envío de código:</p>
+            
+            <select id="f-method" class="auth-input">
+                <option value="wa">WhatsApp (Recomendado)</option>
+                <option value="em">Correo Electrónico</option>
+                <option value="sms">Mensaje de Texto (SMS)</option>
+            </select>
+            <input type="text" id="f-val" class="auth-input" placeholder="Número o Correo de destino">
+            
+            <button class="btn-main" onclick="enviarAcceso()">ENVIAR CÓDIGO DE ACCESO</button>
+            <button onclick="irARegistro()" style="background:none; border:none; color:#64748B; font-size:12px; margin-top:20px; width:100%;">Volver al registro</button>
+        </div>
+    </div>
+
+    <header id="main-header" style="display:none;">
+        <button onclick="toggleMenu(true)" style="background:none; border:none; font-size:30px; color:var(--p); cursor:pointer;">☰</button>
+        <div class="logo">VOXGLOBAL</div>
+        <div id="u-initial" style="background:var(--p); color:white; width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.1);">U</div>
+    </header>
+
+    <nav id="sidebar" class="sidebar">
+        <h2 style="color:var(--p); margin-bottom:35px;">Panel de Trabajo</h2>
+        <button onclick="irA('v-hub')">📂 Mis Proyectos</button>
+        <button onclick="nuevoProyecto()">📝 Crear Documento</button>
+        <button onclick="voxSay('Sincronización Pro en segundo plano.')">⚙️ Ajustes</button>
+        <button onclick="cerrarSesion()" style="color:var(--danger); margin-top:60px; font-weight:900;">🚪 CERRAR SESIÓN</button>
+    </nav>
+    <div class="overlay" onclick="toggleMenu(false)"></div>
+
+    <div id="v-hub" class="vista">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
+            <h2 style="margin:0;">Campo de Trabajo</h2>
+            <span id="user-display" style="font-size:12px; font-weight:900; color:var(--p);"></span>
+        </div>
+        <input type="text" id="search" oninput="renderHub()" placeholder="🔍 Buscar entre mis archivos..." style="width:100%; padding:18px; border:2px solid #E2E8F0; margin-bottom:30px;">
+        <div id="hub-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:20px;"></div>
+        <button id="btn-add" class="btn-float" onclick="nuevoProyecto()">+</button>
+    </div>
+
+    <div id="v-edit" class="vista">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <button onclick="irA('v-hub')" style="border:none; background:none; color:var(--p); font-weight:bold; cursor:pointer;">⬅ SALIR AL HUB</button>
+            <span style="font-size:10px; color:#94A3B8; letter-spacing:1px;">EDITOR UNIFICADO V6.1</span>
+        </div>
+
+        <div id="editor-frame">
+            <div id="e-unified" contenteditable="true" oninput="autoScroll()">
+                <h1 id="e-title">Título del Proyecto</h1>
+                <div id="e-body">Escribe aquí tu contenido profesional...</div>
+            </div>
+        </div>
+
+        <div class="footer" id="tool-bar">
+            <button class="btn-toggle-ui" onclick="toggleTools()">OCULTAR</button>
+            <button class="btn-tool" style="background:var(--adn);" onclick="voxSay('ADN: Red neuronal activada para este texto.')">🧬 ADN</button>
+            <button class="btn-tool" style="background:var(--danger);" onclick="voxSay('🎤 Escuchando dictado...')">🎤 DICTAR</button>
+            <button class="btn-tool" style="background:var(--p);" onclick="reproducir()">🔊 OÍR</button>
+            <button class="btn-tool" style="background:var(--ok); flex:2;" onclick="guardarTodo()">💾 GUARDAR PROYECTO</button>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('vox_v61_db')) || [];
+        let user = JSON.parse(localStorage.getItem('vox_v61_user')) || null;
+
+        // --- MANEJO DE MODAL ---
+        function voxSay(msg, title = "VoxGlobal") {
+            document.getElementById('m-title').innerText = title;
+            document.getElementById('m-msg').innerText = msg;
+            document.getElementById('vox-modal').style.display = 'flex';
+        }
+        function closeVox() { document.getElementById('vox-modal').style.display = 'none'; }
+
+        // --- SISTEMA DE AUTENTICACIÓN ---
+        function generarSeguro() {
+            const seed = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#*";
+            let p = "";
+            for(let i=0; i<10; i++) p += seed[Math.floor(Math.random()*seed.length)];
+            document.getElementById('reg-pass').value = p;
+            voxSay("Contraseña segura generada: " + p + "\nPor favor, memorízala o guárdala.");
+        }
+
+        function ejecutarRegistro() {
+            const id = document.getElementById('reg-user').value;
+            const pass = document.getElementById('reg-pass').value;
+            if(!id || !pass) return voxSay("El registro es obligatorio. Ingresa datos válidos.");
+            
+            user = { id, pass, name: id.split('@')[0] };
+            localStorage.setItem('vox_v61_user', JSON.stringify(user));
+            logIn();
+        }
+
+        function socialLogin(p) {
+            voxSay("Iniciando conexión con " + p + "...");
+            setTimeout(() => {
+                user = { id: p + "_User", name: p + " User" };
+                localStorage.setItem('vox_v61_user', JSON.stringify(user));
+                logIn();
+            }, 1200);
+        }
+
+        function logIn() {
+            document.getElementById('v-auth').style.display = 'none';
+            document.getElementById('main-header').style.display = 'flex';
+            document.getElementById('btn-add').style.display = 'block';
+            document.getElementById('u-initial').innerText = user.name[0].toUpperCase();
+            document.getElementById('user-display').innerText = user.id;
+            irA('v-hub');
+        }
+
+        function irARecuperar() { 
+            document.getElementById('auth-reg').style.display = 'none'; 
+            document.getElementById('auth-forgot').style.display = 'block'; 
+        }
+        function irARegistro() { 
+            document.getElementById('auth-reg').style.display = 'block'; 
+            document.getElementById('auth-forgot').style.display = 'none'; 
+        }
+
+        function enviarAcceso() {
+            const method = document.getElementById('f-method').value;
+            const val = document.getElementById('f-val').value;
+            if(!val) return voxSay("Indica el destino del código.");
+
+            if(method === 'wa') {
+                window.open(`https://wa.me/${val.replace(/\s/g,'')}?text=VoxGlobal: Necesito recuperar mi contraseña.`);
+                voxSay("Se ha abierto WhatsApp para tu recuperación.");
+            } else {
+                voxSay("Código de seguridad enviado a " + val + ". Revisa tu bandeja.");
+            }
+            irARegistro();
+        }
+
+        // --- NAVEGACIÓN Y MENÚ (2) ---
+        function toggleMenu(open) {
+            const side = document.getElementById('sidebar');
+            if(open) side.classList.add('open');
+            else side.classList.remove('open');
+        }
+
+        function irA(v) {
+            document.querySelectorAll('.vista').forEach(x => x.classList.remove('activa'));
+            document.getElementById(v).classList.add('activa');
+            if(v === 'v-hub') renderHub();
+            toggleMenu(false); // Cierre automático al navegar
+        }
+
+        // --- EDITOR Y VISIBILIDAD (5, 6, 7) ---
+        function autoScroll() {
+            const frame = document.getElementById('editor-frame');
+            frame.scrollTop = frame.scrollHeight;
+        }
+
+        function toggleTools() {
+            const bar = document.getElementById('tool-bar');
+            bar.classList.toggle('oculto');
+            event.target.innerText = bar.classList.contains('oculto') ? "MOSTRAR" : "OCULTAR";
+        }
+
+        // --- LÓGICA DE DATOS ---
+        function renderHub() {
+            const grid = document.getElementById('hub-grid');
+            grid.innerHTML = '';
+            const q = document.getElementById('search').value.toLowerCase();
+            
+            // Solo datos del usuario activo
+            const filtrados = db.filter(x => x.uid === user.id && (x.t.toLowerCase().includes(q) || x.c.toLowerCase().includes(q)));
+            
+            filtrados.sort((a,b) => b.id - a.id).forEach(x => {
+                const card = document.createElement('div');
+                card.style = "background:white; padding:25px; border:1px solid #E2E8F0; cursor:pointer; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);";
+                card.onclick = () => {
+                    document.getElementById('e-unified').innerHTML = x.c;
+                    document.getElementById('v-edit').dataset.id = x.id;
+                    irA('v-edit');
+                };
+                card.innerHTML = `<h3 style="margin:0; color:var(--p)">${x.t}</h3><p style="font-size:11px; color:#94A3B8; margin-top:10px;">PROYECTO: ${x.id}</p>`;
+                grid.appendChild(card);
+            });
+        }
+
+        function guardarTodo() {
+            const id = document.getElementById('v-edit').dataset.id || "VOX-" + Date.now();
+            const content = document.getElementById('e-unified').innerHTML;
+            const title = document.getElementById('e-title').innerText || "Sin Título";
+            
+            db = db.filter(x => x.id !== id);
+            db.push({ id, t: title, c: content, uid: user.id });
+            localStorage.setItem('vox_v61_db', JSON.stringify(db));
+            
+            voxSay("Proyecto guardado y cifrado en tu cuenta.");
+            irA('v-hub');
+        }
+
+        function nuevoProyecto() {
+            document.getElementById('e-unified').innerHTML = `<h1 id="e-title">Nuevo Proyecto</h1><div id="e-body">Escribe aquí...</div>`;
+            delete document.getElementById('v-edit').dataset.id;
+            irA('v-edit');
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('vox_v61_user');
+            location.reload();
+        }
+
+        function reproducir() {
+            const txt = document.getElementById('e-unified').innerText;
+            const u = new SpeechSynthesisUtterance(txt);
+            u.lang = 'es-MX';
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- MODO DIOS (PIN 1010) ---
+        let godHold;
+        document.querySelector('.logo').addEventListener('touchstart', () => {
+            godHold = setTimeout(() => {
+                if(prompt("ROOT ACCESS PIN:") === "1010") voxSay("Acceso administrativo habilitado.");
+            }, 4000);
+        });
+        document.querySelector('.logo').addEventListener('touchend', () => clearTimeout(godHold));
+
+        // INICIO
+        window.onload = () => { if(user) logIn(); };
+    </script>
+</body>
+</html>
